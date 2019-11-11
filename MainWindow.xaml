@@ -3,10 +3,145 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Lab2GK"
+        xmlns:local="clr-namespace:Lab2GK" 
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:command="http://www.galasoft.ch/mvvmlight" 
+        xmlns:viewModel="clr-namespace:Lab2GK.ViewModel"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        DataContext="{Binding Source={StaticResource Main}}"
+        WindowState="Maximized"
+        >
+    <Window.Resources>
+        <ResourceDictionary>
+            <viewModel:MouseButtonEventArgsToPointConverter x:Key="MouseButtonEventArgsToPointConverter" />
+        </ResourceDictionary>
+    </Window.Resources>
     <Grid>
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0">
+            <Button Content="Load Normal" Command="{Binding LoadNormalCommand}"></Button>
+            <Button Content="Load Image" Command="{Binding LoadImageCommand}"></Button>
+            <Button Content="Do Magic" Command="{Binding DoMagicCommand}"></Button>
+            <Label Content="Light Vector: "></Label>
+            <RadioButton x:Name="lightVectorRadioButton1" 
+                         GroupName="lightVector"
+                         Content="constant"  
+                         IsChecked="True"
+                         Command="{Binding LightVectorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <RadioButton x:Name="lightVectorRadioButton2" 
+                         GroupName="lightVector"
+                         Content="notconstant"  
+                         IsChecked="False"
+                         Command="{Binding LightVectorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <Label Content="Object Color: "></Label>
+            <RadioButton x:Name="objectColorRadioButton1" 
+                         GroupName="objectColor"
+                         Content="staly"  
+                         IsChecked="True"
+                         Command="{Binding ObjectColorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <RadioButton x:Name="objectColorRadioButton2" 
+                         Content="wczyt"  
+                         GroupName="objectColor"
+                         IsChecked="False"
+                         Command="{Binding ObjectColorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <Label Content="n vector: "></Label>
+            <RadioButton x:Name="nVectorRadioButton1" 
+                         GroupName="nVector"
+                         Content="staly"  
+                         IsChecked="True"
+                         Command="{Binding NVectorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <RadioButton x:Name="nVectorRadioButton2" 
+                         Content="tekstura"  
+                         GroupName="nVector"
+                         IsChecked="False"
+                         Command="{Binding NVectorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <Label Content="FillingColor: "></Label>
+            <RadioButton x:Name="fillingColorRadioButton1" 
+                         Content="Exact"  
+                         GroupName="fillingColor"
+                         IsChecked="True"
+                         Command="{Binding FillingColorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <RadioButton x:Name="fillingColorRadioButton2" 
+                         Content="Interpolated"  
+                         GroupName="fillingColor"
+                         IsChecked="False"
+                         Command="{Binding FillingColorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <RadioButton x:Name="fillingColorRadioButton3" 
+                         Content="Hybrid"  
+                         GroupName="fillingColor"
+                         IsChecked="False"
+                         Command="{Binding FillingColorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <Label Content="K and M: "></Label>
+            <RadioButton x:Name="KandMRadioButton1" 
+                         Content="Custom"  
+                         GroupName="KandM"
+                         IsChecked="True"
+                         Command="{Binding KandMRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <DockPanel VerticalAlignment="Center" Margin="10">
+                <Label DockPanel.Dock="Left" FontWeight="Bold">Kd:</Label>
+                <TextBox Text="{Binding Path=KdValue, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
+                <Slider Value="{Binding KdValue}" Minimum="0" Maximum="1" TickPlacement="BottomRight" TickFrequency="0.01" IsSnapToTickEnabled="True" Name="sliderKd" />
+            </DockPanel>
+            <DockPanel VerticalAlignment="Center" Margin="10">
+                <Label DockPanel.Dock="Left" FontWeight="Bold">Ks:</Label>
+                <TextBox Text="{Binding Path=KsValue, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
+                <Slider Value="{Binding KsValue}" Minimum="0" Maximum="1" TickPlacement="BottomRight" TickFrequency="0.01" IsSnapToTickEnabled="True" Name="sliderKs" />
+            </DockPanel>
+            <DockPanel VerticalAlignment="Center" Margin="10">
+                <Label DockPanel.Dock="Left" FontWeight="Bold">m:</Label>
+                <TextBox Text="{Binding Path=MValue, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
+                <Slider Value="{Binding MValue}" Minimum="1" Maximum="100" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled="True" Name="sliderM" />
+            </DockPanel>
+            <RadioButton x:Name="KandMRadioButton2" 
+                         Content="Random"  
+                         GroupName="KandM"
+                         IsChecked="False"
+                         Command="{Binding KandMRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <Button Content="CLICKME" Command="{Binding CLICKCommand}"></Button>
+            <Button Content="Async" Command="{Binding AsyncCmd}"></Button>
+            <DockPanel>
+                <Label DockPanel.Dock="Left" FontWeight="Bold">R:</Label>
+                <TextBox Text="{Binding Path=DefR, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
+            </DockPanel>
+            <DockPanel>
+                <Label DockPanel.Dock="Left" FontWeight="Bold">G:</Label>
+                <TextBox Text="{Binding Path=DefG, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
+            </DockPanel>
+            <DockPanel>
+                <Label DockPanel.Dock="Left" FontWeight="Bold">B:</Label>
+                <TextBox Text="{Binding Path=DefB, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
+            </DockPanel>
+            <DockPanel>
+                <CheckBox IsChecked="{Binding MovingTrianglesMode}">Move Triangles</CheckBox>
+            </DockPanel>
+        </StackPanel>
+
+        <Canvas Grid.Column="1" >
+            <Border BorderThickness="2" BorderBrush="Black"  >
+                <Image x:Name="Im" Source="{Binding Bitmap}" >
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="MouseDown">
+                            <command:EventToCommand Command="{Binding MouseDownOnBitmap}" EventArgsConverter="{StaticResource MouseButtonEventArgsToPointConverter}" 
+                                                    PassEventArgsToCommand="True" EventArgsConverterParameter="{Binding ElementName=Im}"/>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </Image>
+            </Border>
+        </Canvas>
     </Grid>
 </Window>

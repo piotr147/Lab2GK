@@ -51,6 +51,10 @@ namespace Lab2GK.ViewModel
         private BitmapImage _imageBitmapImage;
         private Color _selectedColor;
         private Color _selectedLightColor;
+        private bool _isSpotlightOn;
+        private int _spotlightHeight;
+        private double _SpotlightFocus;
+        private bool _showTriangles;
 
         public WriteableBitmap Bitmap
         {
@@ -140,6 +144,12 @@ namespace Lab2GK.ViewModel
             set { _nVectorStaly = value; RaisePropertyChanged(nameof(NVectorStaly)); }
         }
 
+        public bool IsSpotlightOn
+        {
+            get { return _isSpotlightOn; }
+            set { _isSpotlightOn = value; RaisePropertyChanged(nameof(IsSpotlightOn)); }
+        }
+
         public double KdValue
         {
             get { return _kdValue; }
@@ -158,28 +168,46 @@ namespace Lab2GK.ViewModel
             set { _mValue = value; RaisePropertyChanged(nameof(MValue)); }
         }
 
+        public int SpotlightHeight
+        {
+            get { return _spotlightHeight; }
+            set { _spotlightHeight = value; RaisePropertyChanged(nameof(SpotlightHeight)); }
+        }
+
+        public double SpotlightFocus
+        {
+            get { return _SpotlightFocus; }
+            set { _SpotlightFocus = value; RaisePropertyChanged(nameof(SpotlightFocus)); }
+        }
+
         public int DefR
         {
-            //get { return _defR; }
-            //set { _defR = value is int && value <= 255 && value >= 0 ? value : 255;
-            //    RaisePropertyChanged(nameof(DefR)); }
             get { return SelectedColor.R; }
         }
 
         public int DefG
         {
-            //get { return _defG; }
-            //set { _defG = value is int && value <= 255 && value >= 0 ? value : 255;
-            //    RaisePropertyChanged(nameof(DefG)); }
             get { return SelectedColor.G; }
         }
 
         public int DefB
         {
-            //get { return _defB; }
-            //set { _defB = value is int && value <= 255 && value >= 0 ? value : 0;
-            //    RaisePropertyChanged(nameof(DefB)); }
             get { return SelectedColor.B; }
+        }
+
+        public (int x, int y, int z) SpotR
+        {
+            get { return (0, 0, SpotlightHeight); }
+        }
+
+        public (int x, int y, int z) SpotG
+        {
+            get { return (Bitmap.PixelWidth, 0, SpotlightHeight); }
+        }
+
+        public (int x, int y, int z) SpotB
+        {
+            get { return (Bitmap.PixelWidth / 2, Bitmap.PixelHeight, SpotlightHeight); }
         }
 
         public int LightR { get { return SelectedLightColor.R; } }
@@ -217,6 +245,12 @@ namespace Lab2GK.ViewModel
         {
             get { return _movingTrianglesMode; }
             set { _movingTrianglesMode = value; RaisePropertyChanged(nameof(MovingTrianglesMode)); }
+        }
+
+        public bool ShowTriangles
+        {
+            get { return _showTriangles; }
+            set { _showTriangles = value; RaisePropertyChanged(nameof(ShowTriangles)); }
         }
 
         public bool IsVertexCaptured
@@ -278,20 +312,24 @@ namespace Lab2GK.ViewModel
             private set;
         }
 
-
         public MainViewModel()
         {
             MValue = 1.0;
             KdValue = 0.5;
             KsValue = 0.5;
+            SpotlightFocus = 50;
+            SpotlightHeight = 30;
 
             CzyStalyKolor = false;
             NVectorStaly = false;
             FillingColorMode = FillingMode.Exact;
             KandMRandom = false;
-            IsLightVectorConstant = false;
+            IsLightVectorConstant = true;
+            IsSpotlightOn = false;
 
-            SelectedColor = Colors.Cyan;
+            ShowTriangles = true;
+
+            SelectedColor = Colors.White;
             SelectedLightColor = Colors.White;
 
             Mtr = 10;
@@ -309,9 +347,9 @@ namespace Lab2GK.ViewModel
             KandMRadioButtonCommand = new RelayCommand<string>(KandMRadioButtonClick);
             LightVectorRadioButtonCommand = new RelayCommand<string>(LightVectorRadioButtonClick);
             LoadNormalCommand = new RelayCommand(LoadNormal);
-            CLICKCommand = new RelayCommand(CLICKclick);
+            CLICKCommand = new RelayCommand(ApplyChanges);
             LoadImageCommand = new RelayCommand(LoadImage);
-            AsyncCmd = new AsyncCommand(AsyncShit, CanExecuteAsyncShit);
+            AsyncCmd = new AsyncCommand(Animation, CanExecuteAnimation);
             MouseDownOnBitmap = new RelayCommand<(int x, int y)>(BitmapDownClick);
         }
 
@@ -342,7 +380,7 @@ namespace Lab2GK.ViewModel
                     }
                     RaisePropertyChanged(nameof(Bitmap));
                     SetTriangles();
-                    DrawTriangles();
+                    ApplyChanges();
                 }
             }
         }
@@ -364,17 +402,20 @@ namespace Lab2GK.ViewModel
             return (-1, -1);
         }
 
-        private async Task AsyncShit()
+        private async Task Animation()
         {
-            try
+            if (!IsLightVectorConstant && !IsSpotlightOn)
             {
-                IsBusy = true;
-                Task <int> xd = AnimationAsync();
-                int result = await xd;
-            }
-            finally
-            {
-                IsBusy = false;
+                try
+                {
+                    IsBusy = true;
+                    Task<int> xd = AnimationAsync();
+                    int result = await xd;
+                }
+                finally
+                {
+                    IsBusy = false;
+                }
             }
         }
 
@@ -398,11 +439,10 @@ namespace Lab2GK.ViewModel
                 await Task.Delay(1);
             }
 
-            
             return 1;
         }
 
-        private bool CanExecuteAsyncShit()
+        private bool CanExecuteAnimation()
         {
             return !IsBusy;
         }
@@ -451,8 +491,6 @@ namespace Lab2GK.ViewModel
             {
                 Uri fileUri = new Uri(openFileDialog.FileName);
                 ImageBitmapImage = new BitmapImage(fileUri);
-
-                //Bitmap
 
                 PictureBitmap = new WriteableBitmap(ImageBitmapImage);
                 Bitmap = new WriteableBitmap(ImageBitmapImage);
@@ -563,9 +601,12 @@ namespace Lab2GK.ViewModel
 
         private void DrawTriangles()
         {
-            foreach (var t in Triangles)
+            if (ShowTriangles)
             {
-                Bitmap.DrawTriangle(t.x1, t.y1, t.x2, t.y2, t.x3, t.y3, Colors.Black);
+                foreach (var t in Triangles)
+                {
+                    Bitmap.DrawTriangle(t.x1, t.y1, t.x2, t.y2, t.x3, t.y3, Colors.Black);
+                }
             }
         }
 
@@ -609,7 +650,21 @@ namespace Lab2GK.ViewModel
 
         private void LightVectorRadioButtonClick(string name)
         {
-            IsLightVectorConstant = name == "lightVectorRadioButton1";
+            if (name == "lightVectorRadioButton1")
+            {
+                IsLightVectorConstant = true;
+                IsSpotlightOn = false;
+            }
+            else if (name == "lightVectorRadioButton2")
+            {
+                IsLightVectorConstant = false;
+                IsSpotlightOn = false;
+            }
+            else
+            {
+                IsLightVectorConstant = false;
+                IsSpotlightOn = true;
+            }
         }
 
         private void LoadDefaultNormal(string path)
@@ -717,7 +772,7 @@ namespace Lab2GK.ViewModel
             }
         }
 
-        private void CLICKclick()
+        private void ApplyChanges()
         {
             var rand = new Random();
             for(int i = 0; i < Triangles.Count; i++)
@@ -774,6 +829,16 @@ namespace Lab2GK.ViewModel
             Plist = P.ToList();
             for (int scan = ymin; scan < ymax; scan++)
             {
+                prevScanV = new List<(int x, int y)>();
+
+                for (int i = 0; i < Plist.Count; i++)
+                {
+                    if (Plist[i].y == scan)
+                    {
+                        prevScanV.Add(Plist[i]);
+                    }
+                }
+
                 foreach (var v in prevScanV)
                 {
                     var prevInd = (Plist.IndexOf(v) - 1 + Plist.Count) % Plist.Count;
@@ -804,6 +869,7 @@ namespace Lab2GK.ViewModel
                     AET.Sort((e1, e2) => { return GetX(e1.v1, e1.v2, scan) - GetX(e2.v1, e2.v2, scan);});
                 }
 
+
                 for (int i = 0; i < AET.Count / 2; i++)
                 {
                     //wypelnianie
@@ -821,6 +887,11 @@ namespace Lab2GK.ViewModel
                             lightVec = Normalize(lightVec);
                         }
 
+                        if (IsSpotlightOn)
+                        {
+
+                        }
+
                         var p0col = CalculateColorExact(P[0].x, P[0].y, P[0], P[1], P[2], kd, ks, m, lightVec.x, lightVec.y, lightVec.z);
                         var p1col = CalculateColorExact(P[1].x, P[1].y, P[0], P[1], P[2], kd, ks, m, lightVec.x, lightVec.y, lightVec.z);
                         var p2col = CalculateColorExact(P[2].x, P[2].y, P[0], P[1], P[2], kd, ks, m, lightVec.x, lightVec.y, lightVec.z);
@@ -829,16 +900,6 @@ namespace Lab2GK.ViewModel
                             col = CalculateColorExact(j, scan, P[0], P[1], P[2], kd, ks, m, lightVec.x, lightVec.y, lightVec.z);
                         else if (FillingColorMode == FillingMode.Interpolated)
                         {
-                            //var p0col = CalculateColorExact(P[0].x, P[0].y, P[0], P[1], P[2], kd, ks, m);
-                            //var p1col = CalculateColorExact(P[1].x, P[1].y, P[0], P[1], P[2], kd, ks, m);
-                            //var p2col = CalculateColorExact(P[2].x, P[2].y, P[0], P[1], P[2], kd, ks, m);
-
-                            //
-
-                            //var p0col = (DefR, DefG, DefB);
-                            //var p1col = (DefR, DefG, DefB);
-                            //var p2col = (DefR, DefG, DefB);
-                            // if obrazek
                             double p0dist = Distance(j, scan, P[0].x, P[0].y);
                             double p1dist = Distance(j, scan, P[1].x, P[1].y);
                             double p2dist = Distance(j, scan, P[2].x, P[2].y);
@@ -848,15 +909,6 @@ namespace Lab2GK.ViewModel
                         }
                         else
                         {
-                            //(int r, int g, int b) p0colrgb = (DefR, DefG, DefB);
-                            //(int r, int g, int b) p1colrgb = (DefR, DefG, DefB);
-                            //(int r, int g, int b) p2colrgb = (DefR, DefG, DefB);
-                            //if(!CzyStalyKolor)
-                            //{
-
-                            //}
-
-                            // if obrazek
                             (double x, double y, double z) p0N = (0, 0, 1);
                             (double x, double y, double z) p1N = (0, 0, 1);
                             (double x, double y, double z) p2N = (0, 0, 1);
@@ -867,51 +919,29 @@ namespace Lab2GK.ViewModel
 
                             if (!NVectorStaly)
                             {
-                                //double nx = (double)NormalBitmap.GetPixel(P[0].x, P[0].y).R / 128.0 - 1.0;
-                                //double ny = (double)NormalBitmap.GetPixel(P[0].x, P[0].y).G / 128.0 - 1.0;
-                                //double nz = (double)NormalBitmap.GetPixel(P[0].x, P[0].y).B / 256.0;
                                 double nx = (double)NormalColors[P[0].x + P[0].y * wdth].r / 128.0 - 1.0;
                                 double ny = (double)NormalColors[P[0].x + P[0].y * wdth].g / 128.0 - 1.0;
                                 double nz = (double)NormalColors[P[0].x + P[0].y * wdth].b / 256.0;
                                 p0N = (nx, ny, nz);
 
-                                //nx = (double)NormalBitmap.GetPixel(P[1].x, P[1].y).R / 128.0 - 1.0;
-                                //ny = (double)NormalBitmap.GetPixel(P[1].x, P[1].y).G / 128.0 - 1.0;
-                                //nz = (double)NormalBitmap.GetPixel(P[1].x, P[1].y).B / 256.0;
                                 nx = (double)NormalColors[P[1].x + P[1].y * wdth].r / 128.0 - 1.0;
                                 ny = (double)NormalColors[P[1].x + P[1].y * wdth].g / 128.0 - 1.0;
                                 nz = (double)NormalColors[P[1].x + P[1].y * wdth].b / 256.0;
                                 p1N = (nx, ny, nz);
 
-                                //nx = (double)NormalBitmap.GetPixel(P[2].x, P[2].y).R / 128.0 - 1.0;
-                                //ny = (double)NormalBitmap.GetPixel(P[2].x, P[2].y).G / 128.0 - 1.0;
-                                //nz = (double)NormalBitmap.GetPixel(P[2].x, P[2].y).B / 256.0;
                                 nx = (double)NormalColors[P[2].x + P[2].y * wdth].r / 128.0 - 1.0;
                                 ny = (double)NormalColors[P[2].x + P[2].y * wdth].g / 128.0 - 1.0;
                                 nz = (double)NormalColors[P[2].x + P[2].y * wdth].b / 256.0;
                                 p2N = (nx, ny, nz);
                             }
 
-                            //col = CalculateColorHybrid(j, scan, p0colrgb, p1colrgb, p2colrgb, p0N, p1N, p2N,
-                            //    p0dist, p1dist, p2dist, kd, ks, m, lightVec.x, lightVec.y, lightVec.z);
                             col = CalculateColorHybrid(j, scan, p0col, p1col, p2col, p0N, p1N, p2N,
                                 p0dist, p1dist, p2dist, kd, ks, m, lightVec.x, lightVec.y, lightVec.z);
 
                         }
 
-                        //Bitmap.SetPixel(j, scan, (byte)col.r, (byte)col.g, (byte)col.b);
                         colorsList.Add((j + scan * wdth, (byte)col.r, (byte)col.g, (byte)col.b));
 
-                    }
-                }
-
-                prevScanV = new List<(int x, int y)>();
-
-                for (int i = 0; i < Plist.Count; i++)
-                {
-                    if (Plist[i].y == scan)
-                    {
-                        prevScanV.Add(Plist[i]);
                     }
                 }
 
@@ -927,8 +957,6 @@ namespace Lab2GK.ViewModel
                     }
                 }
             }
-            
-
         }
 
         private (int r, int g, int b) CalculateColorHybrid(int j, int scan, (int r, int g, int b) p0col, 
@@ -952,24 +980,57 @@ namespace Lab2GK.ViewModel
             vN = Normalize(vN);
 
             (double r, double g, double b) IL = (LightR / 255.0, LightG / 255.0, LightB / 255.0);
-            //(double x, double y, double z) vL = (0, 0, 1);
             (double x, double y, double z) vL = (lightX, lightY, lightZ);
             (double x, double y, double z) vV = (0, 0, 1);
-            //(double x, double y, double z) vR = (2 * vN.x - vL.x, 2 * vN.y - vL.y, 2 * vN.z - vL.z);
             (double x, double y, double z) vR = (2 * Cos(vN, vL) * vN.x - vL.x, 2 * Cos(vN, vL) * vN.y - vL.y, 2 * Cos(vN, vL) * vN.z - vL.z);
             double cosNL = 1;
             double cosVR = 1;
 
-            //vR = (2 * vN.x - vL.x, 2 * vN.y - vL.y, 2 * vN.z - vL.z);
             vR = (2 * Cos(vN, vL) * vN.x - vL.x, 2 * Cos(vN, vL) * vN.y - vL.y, 2 * Cos(vN, vL) * vN.z - vL.z);
             cosNL = Cos(vN, vL);
             cosVR = Cos(vV, vR);
 
             cosVR = Math.Pow(cosVR, m);
 
-            int R = (int)(kd * IL.r * (double)r * cosNL + ks * IL.r * (double)r * cosVR);
-            int G = (int)(kd * IL.g * (double)g * cosNL + ks * IL.g * (double)g * cosVR);
-            int B = (int)(kd * IL.b * (double)b * cosNL + ks * IL.b * (double)b * cosVR);
+            int R = 0;
+            int G = 0;
+            int B = 0;
+
+            if (!IsSpotlightOn)
+            {
+                R = (int)(255.0 * (kd * IL.r * (double)r * cosNL + ks * IL.r * (double)r * cosVR));
+                G = (int)(255.0 * (kd * IL.g * (double)g * cosNL + ks * IL.g * (double)g * cosVR));
+                B = (int)(255.0 * (kd * IL.b * (double)b * cosNL + ks * IL.b * (double)b * cosVR));
+            }
+            else
+            {
+                (double x, double y, double z) Lr = (-SpotR.x + j, -SpotR.y + scan, -SpotlightHeight);
+                (double x, double y, double z) Lg = (-SpotG.x + j, -SpotG.y + scan, -SpotlightHeight);
+                (double x, double y, double z) Lb = (-SpotB.x + j, -SpotB.y + scan, -SpotlightHeight);
+
+                (double x, double y, double z) Vr = (Bitmap.PixelWidth / 2 - SpotR.x, Bitmap.PixelHeight / 2 - SpotR.y,
+                    -SpotR.z);
+                (double x, double y, double z) Vg = (Bitmap.PixelWidth / 2 - SpotG.x, Bitmap.PixelHeight / 2 - SpotG.y,
+                    -SpotG.z);
+                (double x, double y, double z) Vb = (Bitmap.PixelWidth / 2 - SpotB.x, Bitmap.PixelHeight / 2 - SpotB.y,
+                    -SpotB.z);
+
+                Lr = Normalize(Lr);
+                Lg = Normalize(Lg);
+                Lb = Normalize(Lb);
+                Vr = Normalize(Vr);
+                Vg = Normalize(Vg);
+                Vb = Normalize(Vb);
+
+                double ILr = Math.Pow(Cos(Lr, Vr), SpotlightFocus);
+                double ILg = Math.Pow(Cos(Lg, Vg), SpotlightFocus);
+                double ILb = Math.Pow(Cos(Lb, Vb), SpotlightFocus);
+
+
+                R = (int)(255.0 * (kd * ILr * (double)r * cosNL + ks * ILr * (double)r * cosVR));
+                G = (int)(255.0 * (kd * ILg * (double)g * cosNL + ks * ILg * (double)g * cosVR));
+                B = (int)(255.0 * (kd * ILb * (double)b * cosNL + ks * ILb * (double)b * cosVR));
+            }
 
             R = R > 255 ? 255 : R;
             G = G > 255 ? 255 : G;
@@ -978,9 +1039,6 @@ namespace Lab2GK.ViewModel
             R = R < 0 ? 0 : R;
             G = G < 0 ? 0 : G;
             B = B < 0 ? 0 : B;
-            //int R = (int)(kd * IL.r * ((double)r / 255.0) * cosNL + ks * IL.r * ((double)r / 255.0) * cosVR);
-            //int G = (int)(kd * IL.g * ((double)g / 255.0) * cosNL + ks * IL.g * ((double)g / 255.0) * cosVR);
-            //int B = (int)(kd * IL.b * ((double)b / 255.0) * cosNL + ks * IL.b * ((double)b / 255.0) * cosVR);
 
             return (R, G, B);
 
@@ -1006,38 +1064,7 @@ namespace Lab2GK.ViewModel
             G = G < 0 ? 0 : G;
             B = B < 0 ? 0 : B;
 
-            //(double r, double g, double b) IL = (LightR / 255.0, LightG / 255.0, LightB / 255.0);
-            //(double x, double y, double z) vN = (0, 0, 1);
-            //(double x, double y, double z) vL = (0, 0, 1);
-            //(double x, double y, double z) vV = (0, 0, 1);
-            ////(double x, double y, double z) vR = (2 * vN.x - vL.x, 2 * vN.y - vL.y, 2 * vN.z - vL.z);
-            //(double x, double y, double z) vR = (2 * Cos(vN, vL) * vN.x - vL.x, 2 * Cos(vN, vL) * vN.y - vL.y, 2 * Cos(vN, vL) * vN.z - vL.z);
-            //double cosNL = 1;
-            //double cosVR = 1;
-
-            //if (!NVectorStaly)
-            //{
-            //    double nx = (double)NormalBitmap.GetPixel(j, scan).R / 128.0 - 1.0;
-            //    double ny = (double)NormalBitmap.GetPixel(j, scan).G / 128.0 - 1.0;
-            //    double nz = (double)NormalBitmap.GetPixel(j, scan).B / 256.0;
-
-            //    vN = (nx, ny, nz);
-            //    vN = Normalize(vN);
-            //}
-
-            ////vR = (2 * vN.x - vL.x, 2 * vN.y - vL.y, 2 * vN.z - vL.z);
-            //vR = (2 * Cos(vN, vL) * vN.x - vL.x, 2 * Cos(vN, vL) * vN.y - vL.y, 2 * Cos(vN, vL) * vN.z - vL.z);
-            //cosNL = Cos(vN, vL);
-            //cosVR = Cos(vV, vR);
-
-            //cosVR = Math.Pow(cosVR, m);
-
-            //int R = (int)(kd * IL.r * (double)r * cosNL + ks * IL.r * (double)r * cosVR);
-            //int G = (int)(kd * IL.g * (double)g * cosNL + ks * IL.g * (double)g * cosVR);
-            //int B = (int)(kd * IL.b * (double)b * cosNL + ks * IL.b * (double)b * cosVR);
-
             return (R, G, B);
-            //return (r, g, b);
         }
 
         private double Distance(int j, int scan, int x, int y)
@@ -1089,18 +1116,52 @@ namespace Lab2GK.ViewModel
             double ry = 2.0 * cosNL * vN.y - vL.y;
             double rz = 2.0 * cosNL * vN.z - vL.z;
 
-            //vR = (2.0 * Cos(vN, vL) * vN.x - vL.x, 2.0 * Cos(vN, vL) * vN.y - vL.y, 2.0 * Cos(vN, vL) * vN.z - vL.z);
             vR = (rx, ry, rz);
             vR = Normalize(vR);
 
-            //double cosNL = Cos(vN, vL);
             double cosVR = Cos(vV, vR);
             cosVR = Math.Pow(cosVR, m);
 
+            int R = 0;
+            int G = 0;
+            int B = 0;
 
-            int R = (int) (255.0 * (kd * IL.r * IO.r * cosNL + ks * IL.r * IO.r * cosVR));
-            int G = (int) (255.0 * (kd * IL.g * IO.g * cosNL + ks * IL.g * IO.g * cosVR));
-            int B = (int) (255.0 * (kd * IL.b * IO.b * cosNL + ks * IL.b * IO.b * cosVR));
+            if (!IsSpotlightOn)
+            {
+                R = (int)(255.0 * (kd * IL.r * IO.r * cosNL + ks * IL.r * IO.r * cosVR));
+                G = (int)(255.0 * (kd * IL.g * IO.g * cosNL + ks * IL.g * IO.g * cosVR));
+                B = (int)(255.0 * (kd * IL.b * IO.b * cosNL + ks * IL.b * IO.b * cosVR));
+            }
+            else
+            {
+                (double x, double y, double z) Lr = (-SpotR.x + pX, -SpotR.y + pY, -SpotlightHeight);
+                (double x, double y, double z) Lg = (-SpotG.x + pX, -SpotG.y + pY, -SpotlightHeight);
+                (double x, double y, double z) Lb = (-SpotB.x + pX, -SpotB.y + pY, -SpotlightHeight);
+
+                (double x, double y, double z) Vr = (Bitmap.PixelWidth / 2 - SpotR.x, Bitmap.PixelHeight / 2 - SpotR.y,
+                    -SpotR.z);
+                (double x, double y, double z) Vg = (Bitmap.PixelWidth / 2 - SpotG.x, Bitmap.PixelHeight / 2 - SpotG.y,
+                    -SpotG.z);
+                (double x, double y, double z) Vb = (Bitmap.PixelWidth / 2 - SpotB.x, Bitmap.PixelHeight / 2 - SpotB.y,
+                    -SpotB.z);
+
+                Lr = Normalize(Lr);
+                Lg = Normalize(Lg);
+                Lb = Normalize(Lb);
+                Vr = Normalize(Vr);
+                Vg = Normalize(Vg);
+                Vb = Normalize(Vb);
+
+                double ILr = Math.Pow(Cos(Lr, Vr), SpotlightFocus);
+                double ILg = Math.Pow(Cos(Lg, Vg), SpotlightFocus);
+                double ILb = Math.Pow(Cos(Lb, Vb), SpotlightFocus);
+
+
+                R = (int)(255.0 * (kd * ILr * IO.r * cosNL + ks * ILr * IO.r * cosVR));
+                G = (int)(255.0 * (kd * ILg * IO.g * cosNL + ks * ILg * IO.g * cosVR));
+                B = (int)(255.0 * (kd * ILb * IO.b * cosNL + ks * ILb * IO.b * cosVR));
+            }
+
 
             R = R > 255 ? 255 : R;
             G = G > 255 ? 255 : G;
@@ -1109,8 +1170,6 @@ namespace Lab2GK.ViewModel
             R = R < 0 ? 0 : R;
             G = G < 0 ? 0 : G;
             B = B < 0 ? 0 : B;
-
-
 
             return (R, G, B);
         }

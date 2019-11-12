@@ -91,10 +91,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Model\Edge.cs" />
     <Compile Include="Model\FillingMode.cs" />
-    <Compile Include="Model\MyVector.cs" />
-    <Compile Include="Model\Poly.cs" />
     <Compile Include="ViewModel\AsyncCommand.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="ViewModel\MouseButtonEventArgsToPointConverter.cs" />

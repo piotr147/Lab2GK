@@ -40,6 +40,12 @@
                          IsChecked="False"
                          Command="{Binding LightVectorRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <RadioButton x:Name="lightVectorRadioButton3" 
+                         GroupName="lightVector"
+                         Content="spotlight"  
+                         IsChecked="False"
+                         Command="{Binding LightVectorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
             <Separator />
             <Label Content="Object Color: "></Label>
             <RadioButton x:Name="objectColorRadioButton1" 
@@ -63,13 +69,13 @@
             <RadioButton x:Name="nVectorRadioButton1" 
                          GroupName="nVector"
                          Content="constant"  
-                         IsChecked="True"
+                         IsChecked="False"
                          Command="{Binding NVectorRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
             <RadioButton x:Name="nVectorRadioButton2" 
                          Content="Normal map"  
                          GroupName="nVector"
-                         IsChecked="False"
+                         IsChecked="True"
                          Command="{Binding NVectorRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
             <Separator />
@@ -121,16 +127,28 @@
                          IsChecked="False"
                          Command="{Binding KandMRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
-            <Button Content="Apply" Command="{Binding CLICKCommand}"></Button>
-            <Button Content="Animation" Command="{Binding AsyncCmd}"></Button>
+            <Button Content="Apply" Command="{Binding CLICKCommand}" Margin="0, 10, 0, 0"></Button>
+
+            <Button Content="Animation" Command="{Binding AsyncCmd}" Margin="0, 10, 0, 10"></Button>
             <Separator />
-            <DockPanel>
+            <DockPanel Margin="0, 10, 0, 10">
                 <CheckBox IsChecked="{Binding MovingTrianglesMode}">Move Triangles</CheckBox>
+                <CheckBox IsChecked="{Binding ShowTriangles}">Show Triangles</CheckBox>
             </DockPanel>
             <Separator />
-            <DockPanel>
+            <DockPanel Margin="0, 10, 0, 10">
                 <Label>Light color:</Label>
                 <wpfTool:ColorPicker Height="30" DisplayColorAndName="True" SelectedColor="{Binding SelectedLightColor}" />
+            </DockPanel>
+            <DockPanel>
+                <Label DockPanel.Dock="Left" FontWeight="Bold">Focus:</Label>
+                <TextBox Text="{Binding Path=SpotlightFocus, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
+                <Slider Value="{Binding SpotlightFocus}" Minimum="1" Maximum="100" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled="True" Name="sliderSpot" />
+            </DockPanel>
+            <DockPanel>
+                <Label DockPanel.Dock="Left" FontWeight="Bold">Height:</Label>
+                <TextBox Text="{Binding Path=SpotlightHeight, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
+                <Slider Value="{Binding SpotlightHeight}" Minimum="30" Maximum="300" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled="True" Name="sliderSpotH" />
             </DockPanel>
 
         </StackPanel>

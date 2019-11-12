@@ -7,6 +7,7 @@
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:command="http://www.galasoft.ch/mvvmlight" 
         xmlns:viewModel="clr-namespace:Lab2GK.ViewModel"
+        xmlns:wpfTool="clr-namespace:Xceed.Wpf.Toolkit;assembly=Xceed.Wpf.Toolkit"
         mc:Ignorable="d"
         DataContext="{Binding Source={StaticResource Main}}"
         WindowState="Maximized"
@@ -25,7 +26,7 @@
         <StackPanel Grid.Column="0">
             <Button Content="Load Normal" Command="{Binding LoadNormalCommand}"></Button>
             <Button Content="Load Image" Command="{Binding LoadImageCommand}"></Button>
-            <Button Content="Do Magic" Command="{Binding DoMagicCommand}"></Button>
+            <Separator />
             <Label Content="Light Vector: "></Label>
             <RadioButton x:Name="lightVectorRadioButton1" 
                          GroupName="lightVector"
@@ -39,32 +40,39 @@
                          IsChecked="False"
                          Command="{Binding LightVectorRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <Separator />
             <Label Content="Object Color: "></Label>
             <RadioButton x:Name="objectColorRadioButton1" 
                          GroupName="objectColor"
-                         Content="staly"  
-                         IsChecked="True"
-                         Command="{Binding ObjectColorRadioButtonCommand }" 
-                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
-            <RadioButton x:Name="objectColorRadioButton2" 
-                         Content="wczyt"  
-                         GroupName="objectColor"
+                         Content="constant"  
                          IsChecked="False"
                          Command="{Binding ObjectColorRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <RadioButton x:Name="objectColorRadioButton2" 
+                         Content="loaded"  
+                         GroupName="objectColor"
+                         IsChecked="True"
+                         Command="{Binding ObjectColorRadioButtonCommand }" 
+                         CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <DockPanel>
+                <Label>Object color:</Label>
+                <wpfTool:ColorPicker Height="30" DisplayColorAndName="True" SelectedColor="{Binding SelectedColor}" />
+            </DockPanel>
+            <Separator />
             <Label Content="n vector: "></Label>
             <RadioButton x:Name="nVectorRadioButton1" 
                          GroupName="nVector"
-                         Content="staly"  
+                         Content="constant"  
                          IsChecked="True"
                          Command="{Binding NVectorRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
             <RadioButton x:Name="nVectorRadioButton2" 
-                         Content="tekstura"  
+                         Content="Normal map"  
                          GroupName="nVector"
                          IsChecked="False"
                          Command="{Binding NVectorRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <Separator />
             <Label Content="FillingColor: "></Label>
             <RadioButton x:Name="fillingColorRadioButton1" 
                          Content="Exact"  
@@ -84,6 +92,7 @@
                          IsChecked="False"
                          Command="{Binding FillingColorRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
+            <Separator />
             <Label Content="K and M: "></Label>
             <RadioButton x:Name="KandMRadioButton1" 
                          Content="Custom"  
@@ -112,23 +121,18 @@
                          IsChecked="False"
                          Command="{Binding KandMRadioButtonCommand }" 
                          CommandParameter="{Binding Path=Name, RelativeSource={RelativeSource Self}}"/>
-            <Button Content="CLICKME" Command="{Binding CLICKCommand}"></Button>
-            <Button Content="Async" Command="{Binding AsyncCmd}"></Button>
-            <DockPanel>
-                <Label DockPanel.Dock="Left" FontWeight="Bold">R:</Label>
-                <TextBox Text="{Binding Path=DefR, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
-            </DockPanel>
-            <DockPanel>
-                <Label DockPanel.Dock="Left" FontWeight="Bold">G:</Label>
-                <TextBox Text="{Binding Path=DefG, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
-            </DockPanel>
-            <DockPanel>
-                <Label DockPanel.Dock="Left" FontWeight="Bold">B:</Label>
-                <TextBox Text="{Binding Path=DefB, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Right" Width="40" />
-            </DockPanel>
+            <Button Content="Apply" Command="{Binding CLICKCommand}"></Button>
+            <Button Content="Animation" Command="{Binding AsyncCmd}"></Button>
+            <Separator />
             <DockPanel>
                 <CheckBox IsChecked="{Binding MovingTrianglesMode}">Move Triangles</CheckBox>
             </DockPanel>
+            <Separator />
+            <DockPanel>
+                <Label>Light color:</Label>
+                <wpfTool:ColorPicker Height="30" DisplayColorAndName="True" SelectedColor="{Binding SelectedLightColor}" />
+            </DockPanel>
+
         </StackPanel>
 
         <Canvas Grid.Column="1" >

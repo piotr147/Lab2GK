@@ -49,6 +49,8 @@ namespace Lab2GK.ViewModel
         private (int indX, int indY) _capturedVertexInd;
         private BitmapImage _normalBitmapImage;
         private BitmapImage _imageBitmapImage;
+        private Color _selectedColor;
+        private Color _selectedLightColor;
 
         public WriteableBitmap Bitmap
         {
@@ -158,24 +160,34 @@ namespace Lab2GK.ViewModel
 
         public int DefR
         {
-            get { return _defR; }
-            set { _defR = value is int && value <= 255 && value >= 0 ? value : 255;
-                RaisePropertyChanged(nameof(DefR)); }
+            //get { return _defR; }
+            //set { _defR = value is int && value <= 255 && value >= 0 ? value : 255;
+            //    RaisePropertyChanged(nameof(DefR)); }
+            get { return SelectedColor.R; }
         }
 
         public int DefG
         {
-            get { return _defG; }
-            set { _defG = value is int && value <= 255 && value >= 0 ? value : 255;
-                RaisePropertyChanged(nameof(DefG)); }
+            //get { return _defG; }
+            //set { _defG = value is int && value <= 255 && value >= 0 ? value : 255;
+            //    RaisePropertyChanged(nameof(DefG)); }
+            get { return SelectedColor.G; }
         }
 
         public int DefB
         {
-            get { return _defB; }
-            set { _defB = value is int && value <= 255 && value >= 0 ? value : 0;
-                RaisePropertyChanged(nameof(DefB)); }
+            //get { return _defB; }
+            //set { _defB = value is int && value <= 255 && value >= 0 ? value : 0;
+            //    RaisePropertyChanged(nameof(DefB)); }
+            get { return SelectedColor.B; }
         }
+
+        public int LightR { get { return SelectedLightColor.R; } }
+
+        public int LightG { get { return SelectedLightColor.G; } }
+
+        public int LightB { get { return SelectedLightColor.B; } }
+
 
         public FillingMode FillingColorMode
         {
@@ -219,6 +231,28 @@ namespace Lab2GK.ViewModel
             set { _capturedVertexInd = value; RaisePropertyChanged(nameof(CapturedVertexInd)); }
         }
 
+        public Color SelectedColor
+        {
+            get { return _selectedColor; }
+            set { _selectedColor = value; RaisePropertyChanged(nameof(SelectedColor));
+                RaisePropertyChanged(nameof(DefR));
+                RaisePropertyChanged(nameof(DefG));
+                RaisePropertyChanged(nameof(DefB));
+            }
+        }
+
+        public Color SelectedLightColor
+        {
+            get { return _selectedLightColor; }
+            set
+            {
+                _selectedLightColor = value; RaisePropertyChanged(nameof(SelectedLightColor));
+                RaisePropertyChanged(nameof(LightR));
+                RaisePropertyChanged(nameof(LightG));
+                RaisePropertyChanged(nameof(LightB));
+            }
+        }
+
         public RelayCommand<string> ObjectColorRadioButtonCommand { get; private set; }
 
         public RelayCommand<string> NVectorRadioButtonCommand { get; private set; }
@@ -250,9 +284,6 @@ namespace Lab2GK.ViewModel
             MValue = 1.0;
             KdValue = 0.5;
             KsValue = 0.5;
-            DefR = 255;
-            DefG = 255;
-            DefB = 0;
 
             CzyStalyKolor = false;
             NVectorStaly = false;
@@ -260,8 +291,11 @@ namespace Lab2GK.ViewModel
             KandMRandom = false;
             IsLightVectorConstant = false;
 
-            Mtr = 5;
-            Ntr = 5;
+            SelectedColor = Colors.Cyan;
+            SelectedLightColor = Colors.White;
+
+            Mtr = 10;
+            Ntr = 10;
 
             Points = new (int x, int y)[Mtr + 1, Ntr + 1];
             Triangles = new ObservableCollection<(int x1, int y1, int x2, int y2, int x3, int y3)>();
@@ -378,8 +412,6 @@ namespace Lab2GK.ViewModel
             Uri fileUri = new Uri(path, UriKind.Relative);
             ImageBitmapImage = new BitmapImage(fileUri);
 
-            //Bitmap
-
             PictureBitmap = new WriteableBitmap(ImageBitmapImage);
             Bitmap = new WriteableBitmap(ImageBitmapImage);
 
@@ -426,6 +458,33 @@ namespace Lab2GK.ViewModel
                 Bitmap = new WriteableBitmap(ImageBitmapImage);
 
                 PictureColors = new (byte r, byte g, byte b)[PictureBitmap.PixelWidth * PictureBitmap.PixelHeight];
+
+                if (NormalBitmap == null || NormalBitmap.PixelHeight != PictureBitmap.PixelHeight ||
+                    NormalBitmap.PixelWidth != PictureBitmap.PixelWidth)
+                {
+                    NormalBitmap = new WriteableBitmap(ImageBitmapImage);
+
+                    NormalColors = new (byte r, byte g, byte b)[NormalBitmap.PixelWidth * NormalBitmap.PixelHeight];
+
+                    unsafe
+                    {
+                        using (var context = NormalBitmap.GetBitmapContext(ReadWriteMode.ReadOnly))
+                        {
+                            for (int i = 0; i < NormalColors.Length; i++)
+                            {
+                                var c = context.Pixels[i];
+                                var a = (byte)(c >> 24);
+                                int ai = a;
+                                if (ai == 0)
+                                {
+                                    ai = 1;
+                                }
+                                ai = ((255 << 8) / ai);
+                                NormalColors[i] = ((byte)((((c >> 16) & 0xFF) * ai) >> 8), (byte)((((c >> 8) & 0xFF) * ai) >> 8), (byte)((((c & 0xFF) * ai) >> 8)));
+                            }
+                        }
+                    }
+                }
 
                 unsafe
                 {
@@ -510,14 +569,6 @@ namespace Lab2GK.ViewModel
             }
         }
 
-        private void DrawTrianglesRed()
-        {
-            foreach (var t in Triangles)
-            {
-                Bitmap.DrawTriangle(t.x1, t.y1, t.x2, t.y2, t.x3, t.y3, Colors.Red);
-            }
-        }
-
         private void ObjectColorRadioButtonClick(string name)
         {
             CzyStalyKolor = name == "objectColorRadioButton1";
@@ -553,8 +604,6 @@ namespace Lab2GK.ViewModel
 
                         RandTab[i] = (kd, ks, m);
                     }
-
-                
             }
         }
 
@@ -567,8 +616,6 @@ namespace Lab2GK.ViewModel
         {
             Uri fileUri = new Uri(path, UriKind.Relative);
             NormalBitmapImage = new BitmapImage(fileUri);
-
-            //bitIm.Palette.
 
             NormalBitmap = new WriteableBitmap(NormalBitmapImage);
             Bitmap = new WriteableBitmap(NormalBitmapImage);
@@ -609,13 +656,38 @@ namespace Lab2GK.ViewModel
             {
                 Uri fileUri = new Uri(openFileDialog.FileName);
                 NormalBitmapImage = new BitmapImage(fileUri);
-                
-                //bitIm.Palette.
 
                 NormalBitmap = new WriteableBitmap(NormalBitmapImage);
                 Bitmap = new WriteableBitmap(NormalBitmapImage);
 
                 NormalColors = new (byte r, byte g, byte b)[NormalBitmap.PixelWidth * NormalBitmap.PixelHeight];
+
+                if (PictureBitmap == null || NormalBitmap.PixelHeight != PictureBitmap.PixelHeight ||
+                    NormalBitmap.PixelWidth != PictureBitmap.PixelWidth)
+                {
+                    PictureBitmap = new WriteableBitmap(NormalBitmapImage);
+
+                    PictureColors = new (byte r, byte g, byte b)[PictureBitmap.PixelWidth * PictureBitmap.PixelHeight];
+
+                    unsafe
+                    {
+                        using (var context = PictureBitmap.GetBitmapContext(ReadWriteMode.ReadOnly))
+                        {
+                            for (int i = 0; i < PictureColors.Length; i++)
+                            {
+                                var c = context.Pixels[i];
+                                var a = (byte)(c >> 24);
+                                int ai = a;
+                                if (ai == 0)
+                                {
+                                    ai = 1;
+                                }
+                                ai = ((255 << 8) / ai);
+                                PictureColors[i] = ((byte)((((c >> 16) & 0xFF) * ai) >> 8), (byte)((((c >> 8) & 0xFF) * ai) >> 8), (byte)((((c & 0xFF) * ai) >> 8)));
+                            }
+                        }
+                    }
+                }
 
                 unsafe
                 {
@@ -648,7 +720,6 @@ namespace Lab2GK.ViewModel
         private void CLICKclick()
         {
             var rand = new Random();
-            //var i = 8;
             for(int i = 0; i < Triangles.Count; i++)
                 FillPolygon(i, rand, 0, 0, (Triangles[i].x1, Triangles[i].y1), (Triangles[i].x2, Triangles[i].y2), (Triangles[i].x3, Triangles[i].y3));
             DrawTriangles();
@@ -663,7 +734,6 @@ namespace Lab2GK.ViewModel
 
         private void FillPolygon(int poliInd, Random rand, int lightX = 0, int lightY = 0, params (int x, int y)[] P)
         {
-            //var colors = new (byte r, byte g, byte b)[];
             var colorsList = new List<(int ind, byte r, byte g, byte b)>();
             var wdth = NormalBitmap != null ? NormalBitmap.PixelWidth : PictureBitmap.PixelWidth;
             double kd = KdValue;
@@ -672,10 +742,6 @@ namespace Lab2GK.ViewModel
 
             if (KandMRandom)
             {
-                //var rand = new Random();
-                //kd = rand.NextDouble();
-                //ks = rand.NextDouble();
-                //m = rand.Next(1, 101);
                 kd = RandTab[poliInd].kd;
                 ks = RandTab[poliInd].ks;
                 m = RandTab[poliInd].m;
@@ -706,7 +772,6 @@ namespace Lab2GK.ViewModel
             var AET = new List<((int x, int y) v1, (int x, int y) v2)>();
             var prevScanV = new List<(int x, int y)>();
             Plist = P.ToList();
-            //prevScanV.Add();
             for (int scan = ymin; scan < ymax; scan++)
             {
                 foreach (var v in prevScanV)
@@ -739,10 +804,6 @@ namespace Lab2GK.ViewModel
                     AET.Sort((e1, e2) => { return GetX(e1.v1, e1.v2, scan) - GetX(e2.v1, e2.v2, scan);});
                 }
 
-                //var p0col = CalculateColorExact(P[0].x, P[0].y, P[0], P[1], P[2], kd, ks, m);
-                //var p1col = CalculateColorExact(P[1].x, P[1].y, P[0], P[1], P[2], kd, ks, m);
-                //var p2col = CalculateColorExact(P[2].x, P[2].y, P[0], P[1], P[2], kd, ks, m);
-
                 for (int i = 0; i < AET.Count / 2; i++)
                 {
                     //wypelnianie
@@ -756,7 +817,7 @@ namespace Lab2GK.ViewModel
 
                         if (!IsLightVectorConstant)
                         {
-                            lightVec = (lightX - j, lightY - scan, 1420); //STALA :(
+                            lightVec = (lightX - j, lightY - scan, 1420);
                             lightVec = Normalize(lightVec);
                         }
 
@@ -787,9 +848,14 @@ namespace Lab2GK.ViewModel
                         }
                         else
                         {
-                            (int r, int g, int b) p0colrgb = (DefR, DefG, DefB);
-                            (int r, int g, int b) p1colrgb = (DefR, DefG, DefB);
-                            (int r, int g, int b) p2colrgb = (DefR, DefG, DefB);
+                            //(int r, int g, int b) p0colrgb = (DefR, DefG, DefB);
+                            //(int r, int g, int b) p1colrgb = (DefR, DefG, DefB);
+                            //(int r, int g, int b) p2colrgb = (DefR, DefG, DefB);
+                            //if(!CzyStalyKolor)
+                            //{
+
+                            //}
+
                             // if obrazek
                             (double x, double y, double z) p0N = (0, 0, 1);
                             (double x, double y, double z) p1N = (0, 0, 1);
@@ -826,7 +892,9 @@ namespace Lab2GK.ViewModel
                                 p2N = (nx, ny, nz);
                             }
 
-                            col = CalculateColorHybrid(j, scan, p0colrgb, p1colrgb, p2colrgb, p0N, p1N, p2N,
+                            //col = CalculateColorHybrid(j, scan, p0colrgb, p1colrgb, p2colrgb, p0N, p1N, p2N,
+                            //    p0dist, p1dist, p2dist, kd, ks, m, lightVec.x, lightVec.y, lightVec.z);
+                            col = CalculateColorHybrid(j, scan, p0col, p1col, p2col, p0N, p1N, p2N,
                                 p0dist, p1dist, p2dist, kd, ks, m, lightVec.x, lightVec.y, lightVec.z);
 
                         }
@@ -883,7 +951,7 @@ namespace Lab2GK.ViewModel
             (double x, double y, double z) vN = (Nx, Ny, Nz);
             vN = Normalize(vN);
 
-            (double r, double g, double b) IL = (1, 1, 1);
+            (double r, double g, double b) IL = (LightR / 255.0, LightG / 255.0, LightB / 255.0);
             //(double x, double y, double z) vL = (0, 0, 1);
             (double x, double y, double z) vL = (lightX, lightY, lightZ);
             (double x, double y, double z) vV = (0, 0, 1);
@@ -938,7 +1006,7 @@ namespace Lab2GK.ViewModel
             G = G < 0 ? 0 : G;
             B = B < 0 ? 0 : B;
 
-            //(double r, double g, double b) IL = (1, 1, 1);
+            //(double r, double g, double b) IL = (LightR / 255.0, LightG / 255.0, LightB / 255.0);
             //(double x, double y, double z) vN = (0, 0, 1);
             //(double x, double y, double z) vL = (0, 0, 1);
             //(double x, double y, double z) vV = (0, 0, 1);
@@ -987,8 +1055,8 @@ namespace Lab2GK.ViewModel
             if(PictureBitmap != null)
                 picWdth = PictureBitmap.PixelWidth;
 
-            (double r, double g, double b) IL = (1.0, 1.0, 1.0);
-            (double r, double g, double b) IO = (DefR, DefG, DefB);
+            (double r, double g, double b) IL = (LightR / 255.0, LightG / 255.0, LightB / 255.0);
+            (double r, double g, double b) IO = (DefR / 255.0, DefG / 255.0, DefB/255.0);
             (double x, double y, double z) vN = (0.0, 0.0, 1.0);
             (double x, double y, double z) vL = (lightX, lightY, lightZ);
             vL = Normalize(vL);
@@ -1049,10 +1117,7 @@ namespace Lab2GK.ViewModel
 
         private int GetX((int x, int y) v1, (int x, int y) v2, int y)
         {
-            //if((v2.y - v1.y) != 0)
-                return ((y - v1.y) * (v2.x - v1.x) / (v2.y - v1.y) + v1.x);
-            //else
-            //    return 
+            return ((y - v1.y) * (v2.x - v1.x) / (v2.y - v1.y) + v1.x);
         }
 
         private (double x, double y, double z) Normalize((double x, double y, double z) v)
